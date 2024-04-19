@@ -281,6 +281,35 @@ where year(ngay_lam_hop_dong) = 2021 and month(ngay_lam_hop_dong) between 1 and 
 group by hd.ma_hop_dong;
 
 -- 13.	Hiển thị thông tin các Dịch vụ đi kèm được sử dụng nhiều nhất bởi các Khách hàng đã đặt phòng. (Lưu ý là có thể có nhiều dịch vụ có số lần sử dụng nhiều như nhau).
+select dvdk.ma_dich_vu_di_kem, dvdk.ten_dich_vu_di_kem, sum(hdct.so_luong) as quantity
+from hop_dong_chi_tiet hdct join dich_vu_di_kem dvdk using(ma_dich_vu_di_kem)
+group by dvdk.ma_dich_vu_di_kem
+having quantity = 
+(
+select sum(so_luong) as total
+from hop_dong_chi_tiet
+group by ma_dich_vu_di_kem
+order by total desc
+limit 1
+);
 
+-- 14.	Hiển thị thông tin tất cả các Dịch vụ đi kèm chỉ mới được sử dụng một lần duy nhất. Thông tin hiển thị bao gồm ma_hop_dong, ten_loai_dich_vu, ten_dich_vu_di_kem, so_lan_su_dung (được tính dựa trên việc count các ma_dich_vu_di_kem).
+select hop_dong.ma_hop_dong, loai_dich_vu.ten_loai_dich_vu, dich_vu_di_kem.ten_dich_vu_di_kem , count(hop_dong_chi_tiet.ma_dich_vu_di_kem) as so_lan_su_dung
+from hop_dong inner join dich_vu  on dich_vu.ma_dich_vu = hop_dong.ma_dich_vu
+inner join loai_dich_vu on loai_dich_vu.ma_loai_dich_vu = dich_vu.ma_dich_vu
+inner join hop_dong_chi_tiet on hop_dong.ma_hop_dong = hop_dong_chi_tiet.ma_hop_dong
+inner join dich_vu_di_kem on dich_vu_di_kem.ma_dich_vu_di_kem = hop_dong_chi_tiet.ma_dich_vu_di_kem
+group by  dich_vu_di_kem.ten_dich_vu_di_kem having so_lan_su_dung = 1;
+
+SET PERSIST sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
+
+-- 15.	Hiển thi thông tin của tất cả nhân viên bao gồm ma_nhan_vien, ho_ten, ten_trinh_do, ten_bo_phan, so_dien_thoai, dia_chi mới chỉ lập được tối đa 3 hợp đồng từ năm 2020 đến 2021.
+select nhan_vien.ma_nhan_vien, nhan_vien.ho_ten, nhan_vien.so_dien_thoai, nhan_vien.dia_chi, trinh_do.ten_trinh_do, bo_phan.ten_bo_phan, count(hop_dong.ma_nhan_vien) as so_lan_tao_hop_dong
+from nhan_vien inner join trinh_do on trinh_do.ma_trinh_do = nhan_vien.ma_trinh_do
+inner join bo_phan on bo_phan.ma_bo_phan = nhan_vien.ma_bo_phan
+inner join hop_dong on hop_dong.ma_nhan_vien = nhan_vien.ma_nhan_vien
+where hop_dong.ngay_lam_hop_dong between '2018-01-01' and '2019-12-31'
+group by nhan_vien.ho_ten
+having so_lan_tao_hop_dong <4;
 
 
